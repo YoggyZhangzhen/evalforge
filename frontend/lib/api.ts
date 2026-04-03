@@ -95,8 +95,12 @@ export interface TaskProgress {
 // Axios instance
 // ---------------------------------------------------------------------------
 
+const API_BASE =
+  process.env.NEXT_PUBLIC_API_URL ||
+  (typeof window !== "undefined" ? "/api" : "http://localhost:8000");
+
 export const http = axios.create({
-  baseURL: "/api",        // proxied to http://localhost:8000 via next.config
+  baseURL: API_BASE,
   timeout: 15_000,
   headers: { "Content-Type": "application/json" },
 });

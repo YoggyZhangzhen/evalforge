@@ -2,11 +2,6 @@
 往 evalforge.db 注入 30+ 道题目（不清空已有任务/结果）。
 运行：python seed_questions.py
 """
-from models import Base, Question, engine, SessionLocal
-
-Base.metadata.create_all(bind=engine)
-db = SessionLocal()
-
 QUESTIONS = [
     # ────────────────────────── HumanEval (基础算法) ──────────────────────────
     {
@@ -366,15 +361,17 @@ QUESTIONS = [
     },
 ]
 
-# 只插入不重复的（按 description 去重，防止重复运行）
-existing = {q.description for q in db.query(Question).all()}
-new_count = 0
-for qd in QUESTIONS:
-    if qd["description"] in existing:
-        continue
-    db.add(Question(**qd))
-    new_count += 1
-
-db.commit()
-db.close()
-print(f"✓ 新增 {new_count} 道题目（已跳过重复）")
+if __name__ == "__main__":
+    from models import Base, Question, engine, SessionLocal
+    Base.metadata.create_all(bind=engine)
+    db = SessionLocal()
+    existing = {q.description for q in db.query(Question).all()}
+    new_count = 0
+    for qd in QUESTIONS:
+        if qd["description"] in existing:
+            continue
+        db.add(Question(**qd))
+        new_count += 1
+    db.commit()
+    db.close()
+    print(f"✓ 新增 {new_count} 道题目（已跳过重复）")

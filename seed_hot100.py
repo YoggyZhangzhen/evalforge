@@ -3,10 +3,6 @@ LeetCode Hot 100 题目注入（函数式题目，可直接代码沙盒评测）
 链表/树等依赖自定义节点类的题目暂不包含（沙盒无法序列化节点）。
 运行：python seed_hot100.py
 """
-from models import Base, Question, engine, SessionLocal
-
-Base.metadata.create_all(bind=engine)
-db = SessionLocal()
 
 HOT100 = [
     # ── 哈希 ─────────────────────────────────────────────────────────────────
@@ -654,14 +650,17 @@ HOT100 = [
     },
 ]
 
-existing = {q.description for q in db.query(Question).all()}
-new_count = 0
-for qd in HOT100:
-    if qd["description"] in existing:
-        continue
-    db.add(Question(**qd))
-    new_count += 1
-
-db.commit()
-db.close()
-print(f"✓ 新增 Hot100 题目 {new_count} 道（已跳过重复）")
+if __name__ == "__main__":
+    from models import Base, Question, engine, SessionLocal
+    Base.metadata.create_all(bind=engine)
+    db = SessionLocal()
+    existing = {q.description for q in db.query(Question).all()}
+    new_count = 0
+    for qd in HOT100:
+        if qd["description"] in existing:
+            continue
+        db.add(Question(**qd))
+        new_count += 1
+    db.commit()
+    db.close()
+    print(f"✓ 新增 Hot100 题目 {new_count} 道（已跳过重复）")

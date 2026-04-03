@@ -70,6 +70,24 @@ app.add_middleware(
 @app.on_event("startup")
 def on_startup():
     Base.metadata.create_all(bind=engine)
+    _auto_seed()
+
+
+def _auto_seed():
+    """首次启动时自动注入题库（幂等，已有题目则跳过）。"""
+    from models import Question, SessionLocal as _SL
+    from seed_questions import QUESTIONS
+    from seed_hot100 import HOT100
+    db = _SL()
+    try:
+        if db.query(Question).count() > 0:
+            return
+        for qd in QUESTIONS + HOT100:
+            db.add(Question(**qd))
+        db.commit()
+        logging.getLogger(__name__).info("Auto-seeded %d questions", len(QUESTIONS) + len(HOT100))
+    finally:
+        db.close()
 
 
 # ---------------------------------------------------------------------------
