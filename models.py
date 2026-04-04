@@ -81,6 +81,7 @@ class TaskStatus(str, Enum):
     running = "running"
     completed = "completed"
     failed = "failed"
+    cancelled = "cancelled"
 
 
 class Task(Base):

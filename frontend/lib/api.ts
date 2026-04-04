@@ -4,7 +4,7 @@ import axios from "axios";
 // Types (mirror backend Pydantic schemas)
 // ---------------------------------------------------------------------------
 
-export type TaskStatus = "pending" | "running" | "completed" | "failed";
+export type TaskStatus = "pending" | "running" | "completed" | "failed" | "cancelled";
 
 export interface Task {
   id: number;
@@ -133,6 +133,9 @@ export const api = {
 
   updateTaskStatus: (id: number, status: TaskStatus) =>
     http.patch<Task>(`/tasks/${id}/status`, { status }).then((r) => r.data),
+
+  cancelTask: (id: number) =>
+    http.post<Task>(`/tasks/${id}/cancel`).then((r) => r.data),
 
   // Report
   getReport: (taskId: number) =>

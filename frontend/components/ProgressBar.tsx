@@ -6,19 +6,19 @@ import clsx from "clsx";
 
 interface Props {
   task: Task;
-  /** 评测完成后回调，用于刷新报告和结果 */
   onCompleted: () => void;
-  /** 任务状态变化时同步给父组件 */
   onStatusChange: (status: Task["status"]) => void;
 }
 
 export default function ProgressBar({ task, onCompleted, onStatusChange }: Props) {
   const [progress, setProgress] = useState<TaskProgress | null>(null);
+  const [cancelling, setCancelling] = useState(false);
   const completedRef = useRef(false);
 
+  const isDone = ["completed", "failed", "cancelled"].includes(task.status);
+
   useEffect(() => {
-    // 已完成/失败不需要轮询
-    if (task.status === "completed" || task.status === "failed") return;
+    if (isDone) return;
 
     completedRef.current = false;
 
@@ -28,7 +28,7 @@ export default function ProgressBar({ task, onCompleted, onStatusChange }: Props
         setProgress(p);
         onStatusChange(p.status);
 
-        if ((p.status === "completed" || p.status === "failed") && !completedRef.current) {
+        if (["completed", "failed", "cancelled"].includes(p.status) && !completedRef.current) {
           completedRef.current = true;
           onCompleted();
         }
@@ -37,18 +37,30 @@ export default function ProgressBar({ task, onCompleted, onStatusChange }: Props
       }
     };
 
-    tick(); // 立即执行一次
+    tick();
     const id = setInterval(tick, 1500);
     return () => clearInterval(id);
-  }, [task.id, task.status, onCompleted, onStatusChange]);
+  }, [task.id, task.status, onCompleted, onStatusChange, isDone]);
 
-  // 已完成任务不显示进度条
-  if (task.status === "completed" || task.status === "failed") return null;
+  if (isDone) return null;
 
   const pct     = progress?.percent ?? 0;
   const done    = progress?.completed ?? 0;
   const total   = progress?.total ?? 0;
   const running = progress?.status === "running";
+
+  async function handleCancel() {
+    setCancelling(true);
+    try {
+      await api.cancelTask(task.id);
+      onStatusChange("cancelled");
+      onCompleted();
+    } catch {
+      // ignore
+    } finally {
+      setCancelling(false);
+    }
+  }
 
   return (
     <div className="card space-y-3">
@@ -60,14 +72,23 @@ export default function ProgressBar({ task, onCompleted, onStatusChange }: Props
           )}
           {running ? "评测进行中…" : "准备启动…"}
         </span>
-        <span className="text-forge-accent font-mono font-semibold tabular-nums">
-          {done} / {total} 题
-        </span>
+        <div className="flex items-center gap-3">
+          <span className="text-forge-accent font-mono font-semibold tabular-nums">
+            {done} / {total} 题
+          </span>
+          <button
+            onClick={handleCancel}
+            disabled={cancelling}
+            className="px-2 py-0.5 rounded border border-forge-red/50 text-forge-red
+                       hover:bg-forge-red/10 transition-colors disabled:opacity-40 text-[11px]"
+          >
+            {cancelling ? "终止中…" : "■ 终止"}
+          </button>
+        </div>
       </div>
 
       {/* 进度条轨道 */}
       <div className="relative h-2 bg-forge-muted/30 rounded-full overflow-hidden">
-        {/* 填充条 */}
         <div
           className={clsx(
             "absolute inset-y-0 left-0 rounded-full transition-all duration-500",
@@ -75,7 +96,6 @@ export default function ProgressBar({ task, onCompleted, onStatusChange }: Props
           )}
           style={{ width: `${pct}%` }}
         />
-        {/* 光扫动画（仅运行时） */}
         {running && pct < 100 && (
           <div className="absolute inset-y-0 left-0 w-full animate-[shimmer_1.5s_ease-in-out_infinite]"
                style={{
@@ -85,12 +105,10 @@ export default function ProgressBar({ task, onCompleted, onStatusChange }: Props
         )}
       </div>
 
-      {/* 百分比 + 每题日志 */}
+      {/* 百分比 */}
       <div className="flex items-center justify-between text-[11px] text-forge-muted font-mono">
         <span>{pct}%</span>
-        {done > 0 && (
-          <span>最新完成：题目 #{done}</span>
-        )}
+        {done > 0 && <span>最新完成：题目 #{done}</span>}
       </div>
     </div>
   );

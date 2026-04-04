@@ -193,6 +193,24 @@ def update_task_status(
     return task
 
 
+@app.post("/tasks/{task_id}/cancel", response_model=TaskRead, tags=["Tasks"])
+def cancel_task(
+    task_id: int,
+    db: Session = Depends(get_db),
+    _: User = Depends(get_current_user),
+):
+    """取消正在运行或等待中的任务。"""
+    task = db.query(Task).filter(Task.id == task_id).first()
+    if not task:
+        raise HTTPException(status_code=404, detail=f"Task {task_id} not found")
+    if task.status not in (TaskStatus.pending, TaskStatus.running):
+        raise HTTPException(status_code=400, detail="只能取消 pending 或 running 状态的任务")
+    task.status = TaskStatus.cancelled
+    db.commit()
+    db.refresh(task)
+    return task
+
+
 @app.delete("/tasks/{task_id}", status_code=status.HTTP_204_NO_CONTENT, tags=["Tasks"])
 def delete_task(task_id: int, db: Session = Depends(get_db)):
     """Delete a task and all its results (cascade)."""

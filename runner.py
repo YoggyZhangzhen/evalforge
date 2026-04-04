@@ -134,9 +134,25 @@ class EvaluationRunner:
             timeout=self.cfg.sandbox_timeout,
         )
 
+        # ── 断点续传：跳过已有结果的题目 ────────────────────────────
+        done_ids = {
+            r.question_id
+            for r in db.query(Result).filter(Result.task_id == task.id).all()
+        }
+        remaining = [q for q in questions if q.id not in done_ids]
+        if done_ids:
+            logger.info("Task %d | 断点续传，跳过已完成 %d 题，剩余 %d 题",
+                        task.id, len(done_ids), len(remaining))
+
         # ── 逐题评测 ─────────────────────────────────────────────────
-        for idx, q in enumerate(questions, start=1):
-            logger.info("Task %d | 题目 %d/%d (Q#%d) ...", task.id, idx, len(questions), q.id)
+        for idx, q in enumerate(remaining, start=1):
+            # 每题前检查是否已被取消
+            db.refresh(task)
+            if task.status == TaskStatus.cancelled:
+                logger.info("Task %d 已被用户取消，停止评测", task.id)
+                return
+
+            logger.info("Task %d | 题目 %d/%d (Q#%d) ...", task.id, idx, len(remaining), q.id)
             result = self._eval_one(llm, evaluator, q)
 
             row = Result(

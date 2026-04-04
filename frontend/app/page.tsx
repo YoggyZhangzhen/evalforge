@@ -145,12 +145,13 @@ export default function HomePage() {
                     <span className={`text-xs px-2 py-1 rounded border font-medium
                       ${s === "completed" ? "badge-pass"
                       : s === "failed"    ? "badge-fail"
+                      : s === "cancelled" ? "border-forge-muted text-forge-muted"
                       : s === "running"   ? "badge-pending"
                       : "border-forge-border text-forge-subtext"}`}>
                       {s === "running" && (
                         <span className="inline-block w-1.5 h-1.5 rounded-full bg-forge-yellow animate-pulse mr-1" />
                       )}
-                      {{ pending: "待运行", running: "运行中", completed: "已完成", failed: "已失败" }[s]}
+                      {{ pending: "待运行", running: "运行中", completed: "已完成", failed: "已失败", cancelled: "已取消" }[s]}
                     </span>
                   );
                 })()}
