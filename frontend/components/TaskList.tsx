@@ -9,6 +9,7 @@ const STATUS_STYLES: Record<TaskStatus, string> = {
   running:   "bg-cyan-950/40   text-forge-accent   border-cyan-900/60 animate-pulse",
   completed: "bg-green-950/40  text-forge-green    border-green-900/60",
   failed:    "bg-red-950/40    text-forge-red      border-red-900/60",
+  cancelled: "bg-forge-muted/20 text-forge-muted   border-forge-border",
 };
 
 const STATUS_LABELS: Record<TaskStatus, string> = {
@@ -16,6 +17,7 @@ const STATUS_LABELS: Record<TaskStatus, string> = {
   running:   "运行中",
   completed: "已完成",
   failed:    "已失败",
+  cancelled: "已取消",
 };
 
 interface Props {

@@ -31,14 +31,16 @@ SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 def _migrate() -> None:
     """为旧版数据库补充新增列，幂等操作。"""
-    try:
-        with engine.connect() as conn:
-            conn.execute(text(
-                "ALTER TABLE questions ADD COLUMN dataset_name VARCHAR(256) NOT NULL DEFAULT 'HumanEval'"
-            ))
-            conn.commit()
-    except Exception:
-        pass  # 列已存在，忽略
+    for stmt in [
+        "ALTER TABLE questions ADD COLUMN dataset_name VARCHAR(256) NOT NULL DEFAULT 'HumanEval'",
+        "ALTER TABLE tasks ADD COLUMN user_id INTEGER REFERENCES users(id)",
+    ]:
+        try:
+            with engine.connect() as conn:
+                conn.execute(text(stmt))
+                conn.commit()
+        except Exception:
+            pass  # 列已存在，忽略
 
 
 _migrate()
@@ -88,6 +90,7 @@ class Task(Base):
     __tablename__ = "tasks"
 
     id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=True, index=True)
     model_name = Column(String(128), nullable=False)
     dataset_name = Column(String(256), nullable=False)
     status = Column(String(32), default=TaskStatus.pending, nullable=False)
@@ -139,6 +142,7 @@ class TaskCreate(BaseModel):
 
 class TaskRead(BaseModel):
     id: int
+    user_id: Optional[int] = None
     model_name: str
     dataset_name: str
     status: TaskStatus

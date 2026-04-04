@@ -44,7 +44,14 @@ export default function LoginPage() {
         </div>
 
         {/* Card */}
-        <div className="bg-forge-surface border border-forge-border rounded-xl p-6">
+        <div className="bg-forge-surface border border-forge-border rounded-xl p-6 relative">
+          <button
+            onClick={() => router.back()}
+            className="absolute top-4 right-4 text-forge-muted hover:text-forge-text transition-colors"
+            title="返回"
+          >
+            ✕
+          </button>
           {/* Tabs */}
           <div className="flex mb-6 border-b border-forge-border">
             {(["login", "register"] as const).map((t) => (

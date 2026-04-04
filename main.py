@@ -143,10 +143,10 @@ def create_task(
     payload: TaskCreate,
     background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
-    _: User = Depends(get_current_user),
+    current_user: User = Depends(get_current_user),
 ):
     """创建评测任务并在后台立即开始评测。需要登录。"""
-    task = Task(model_name=payload.model_name, dataset_name=payload.dataset_name)
+    task = Task(model_name=payload.model_name, dataset_name=payload.dataset_name, user_id=current_user.id)
     db.add(task)
     db.commit()
     db.refresh(task)
@@ -160,9 +160,10 @@ def list_tasks(
     limit: int = Query(default=20, ge=1, le=200),
     offset: int = Query(default=0, ge=0),
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
-    """Return a paginated list of tasks, optionally filtered by status."""
-    q = db.query(Task)
+    """Return tasks belonging to the current user."""
+    q = db.query(Task).filter(Task.user_id == current_user.id)
     if status_filter:
         q = q.filter(Task.status == status_filter)
     return q.order_by(Task.created_at.desc()).offset(offset).limit(limit).all()
